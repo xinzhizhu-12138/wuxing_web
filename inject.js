@@ -160,6 +160,21 @@
     return STEM_TO_BEAST[stem] || null;
   }
 
+  function getCurrentBeast(stem) {
+    var beast = getBeast(stem);
+    if (beast) return beast;
+
+    var ipImg = document.querySelector('.beast-ip-img');
+    if (ipImg) {
+      if (ipImg.dataset && ipImg.dataset.beast) return ipImg.dataset.beast;
+      if (ipImg.alt) return ipImg.alt;
+      var src = ipImg.getAttribute('src') || '';
+      var m = src.match(/\/images\/ip\/([^/.]+)\.png/);
+      if (m && m[1]) return decodeURIComponent(m[1]);
+    }
+    return '';
+  }
+
   // ---- 目标一: 报告页顶部 IP 图 ----
   function injectReportIP() {
     const stem = getStem();
@@ -872,7 +887,7 @@
     btn.addEventListener('click', function (e) {
       e.stopPropagation();
       var stem            = getStem();
-      var beast           = getBeast(stem) || '';
+      var beast           = getCurrentBeast(stem);
       var element         = getElement();
       var personalityName = getPersonalityName();
       var quote           = getReportQuote();
