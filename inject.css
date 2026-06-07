@@ -1,0 +1,1525 @@
+/* 目标一: 报告页顶部 IP 图 */
+.beast-ip-hero {
+  width: 100%;
+  position: relative;
+  background: transparent;
+  /* 给底部羽化区留出呼吸空间，避免内容遮挡 */
+  margin-bottom: -12px;
+}
+.beast-ip-img {
+  width: 100%;
+  display: block;
+  object-fit: contain;
+  max-height: 320px;
+
+  /*
+   * 羽化融合：用椭圆径向渐变 mask，中心区域完全不透明，
+   * 向四周尤其底部和左右逐渐透明，像印在宣纸上自然消隐。
+   *
+   * 椭圆参数：108% × 125%（宽超出元素确保侧边够宽）
+   * 中心偏上（22%），使底部衰减更早、更自然。
+   */
+  /*
+   * 双线性渐变交叉 mask（intersect = 两个方向同时羽化）：
+   *   第一层：上下方向 —— 底部从 50% 开始淡出，93% 完全透明
+   *   第二层：左右方向 —— 两侧各 14% 宽的淡入/淡出区
+   * 两层 alpha 相乘，确保四边都有效羽化，不再依赖椭圆半径估算。
+   */
+  -webkit-mask-image:
+    linear-gradient(to bottom,
+      rgba(0, 0, 0, 0.7)   0%,
+      black                 4%,
+      black                50%,
+      rgba(0, 0, 0, 0.88)  62%,
+      rgba(0, 0, 0, 0.55)  75%,
+      rgba(0, 0, 0, 0.15)  86%,
+      transparent          94%
+    ),
+    linear-gradient(to right,
+      transparent           0%,
+      rgba(0, 0, 0, 0.35)   5%,
+      rgba(0, 0, 0, 0.80)  10%,
+      black                15%,
+      black                85%,
+      rgba(0, 0, 0, 0.80)  90%,
+      rgba(0, 0, 0, 0.35)  95%,
+      transparent          100%
+    );
+  -webkit-mask-composite: source-in;
+
+  mask-image:
+    linear-gradient(to bottom,
+      rgba(0, 0, 0, 0.7)   0%,
+      black                 4%,
+      black                50%,
+      rgba(0, 0, 0, 0.88)  62%,
+      rgba(0, 0, 0, 0.55)  75%,
+      rgba(0, 0, 0, 0.15)  86%,
+      transparent          94%
+    ),
+    linear-gradient(to right,
+      transparent           0%,
+      rgba(0, 0, 0, 0.35)   5%,
+      rgba(0, 0, 0, 0.80)  10%,
+      black                15%,
+      black                85%,
+      rgba(0, 0, 0, 0.80)  90%,
+      rgba(0, 0, 0, 0.35)  95%,
+      transparent          100%
+    );
+  mask-composite: intersect;
+}
+.beast-ip-caption {
+  position: relative;   /* 确保 caption 在 mask 之外，不受影响 */
+  z-index: 1;
+  text-align: center;
+  font-size: 13px;
+  color: #8b7355;
+  padding: 4px 0 2px;
+  letter-spacing: 3px;
+}
+
+/* 目标二: 翻转卡片覆盖层 */
+#flip-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+#flip-overlay.visible {
+  opacity: 1;
+}
+.flip-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(6px);
+}
+.flip-scene {
+  position: relative;
+  z-index: 1;
+  width: 300px;
+  height: 420px;
+  perspective: 1200px;
+  cursor: pointer;
+  user-select: none;
+}
+.flip-card-inner {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 16px;
+}
+.flip-card-inner.flipped {
+  transform: rotateY(180deg);
+}
+.flip-front,
+.flip-back {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 16px;
+  overflow: hidden;
+}
+.flip-front {
+  background: linear-gradient(155deg, #1c3028 0%, #0d1e18 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 28px;
+  color: #e8d9c0;
+  border: 1px solid rgba(168, 143, 89, 0.35);
+}
+.flip-beast-name {
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: 6px;
+  color: #c9a96e;
+  margin-bottom: 18px;
+}
+.flip-primary {
+  font-size: 16px;
+  letter-spacing: 2px;
+  color: #e8d9c0;
+  margin-bottom: 6px;
+}
+.flip-sub {
+  font-size: 13px;
+  color: #a89070;
+  margin-bottom: 20px;
+  letter-spacing: 1px;
+}
+.flip-quote {
+  font-size: 13px;
+  color: #b0a090;
+  text-align: center;
+  line-height: 1.9;
+  border-top: 1px solid rgba(168, 143, 89, 0.25);
+  padding-top: 16px;
+  width: 100%;
+}
+.flip-hint {
+  margin-top: 20px;
+  font-size: 11px;
+  color: rgba(200, 180, 140, 0.45);
+  letter-spacing: 2px;
+}
+.flip-back {
+  transform: rotateY(180deg);
+}
+.flip-bg-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.flip-back-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.72) 0%, rgba(0, 0, 0, 0.08) 55%);
+}
+.flip-enter-btn {
+  position: absolute;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(201, 169, 110, 0.92);
+  color: #1a1205;
+  border: none;
+  border-radius: 24px;
+  padding: 12px 32px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  cursor: pointer;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+}
+.flip-enter-btn:active {
+  opacity: 0.8;
+}
+
+/* 目标四: 报告页七模块内容 */
+.sections[data-injected-stem] .section-desc {
+  white-space: normal;
+  display: block;
+}
+.inject-list {
+  margin: 4px 0;
+  padding-left: 20px;
+  list-style: disc;
+}
+.inject-list li {
+  line-height: 1.75;
+  margin-bottom: 4px;
+}
+.inject-para {
+  margin: 0 0 8px;
+  line-height: 1.75;
+}
+.inject-para:last-child {
+  margin-bottom: 0;
+}
+.inject-words {
+  line-height: 1.9;
+  font-style: italic;
+  border-left: 3px solid rgba(168, 143, 89, 0.5);
+  padding-left: 12px;
+  color: #8b7355;
+}
+
+/* 目标三: 五行世界背景 */
+/* ======================================================
+   报告页内容模块：横向标题 + 下方正文
+   ====================================================== */
+
+/* 容器：模块之间用间距分隔，去掉原有 padding:0 */
+.sections {
+  padding: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0 !important;
+}
+
+/* 每个模块：独立块，取消原有 flex 侧边布局 */
+.section-item {
+  display: block !important;
+  padding: 20px 0 22px !important;
+  border-bottom: 1px solid rgba(190, 160, 90, 0.28) !important;
+  border-top: none !important;
+  background: transparent !important;
+  gap: 0 !important;
+}
+.section-item:last-child {
+  border-bottom: none !important;
+}
+
+/* 原有的 icon 包裹和 section-content 不再出现（injected），保险起见隐藏 */
+.section-icon-wrap { display: none !important; }
+.section-content { display: contents !important; }
+
+/* 横向标题：上方第一行，带小装饰前缀 */
+.section-title {
+  display: flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  color: #243f35 !important;
+  letter-spacing: 2px !important;
+  margin-bottom: 12px !important;
+  line-height: 1.4 !important;
+  writing-mode: horizontal-tb !important; /* 取消原竖排 */
+}
+.section-title::before {
+  content: '◆';
+  font-size: 7px;
+  color: rgba(196, 160, 72, 0.85);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* 正文区域：整体向右缩进，与标题形成层次 */
+.section-desc {
+  display: block !important;
+  font-size: 15px !important;
+  color: #5f5448 !important;
+  line-height: 1.95 !important;
+  max-width: 100% !important;
+  padding-left: 14px !important;        /* 整体内缩，贴左留白 */
+  box-sizing: border-box !important;
+}
+
+/* 段落：首行缩进 + 段落间距 */
+.inject-para {
+  display: block;
+  margin: 0 0 12px 0;
+  color: #5f5448;
+  font-size: 15px;
+  line-height: 1.95;
+  text-indent: 2em;                     /* 首行缩进 */
+}
+.inject-para:last-child { margin-bottom: 0; }
+
+/* 列表：与正文缩进对齐，去掉浏览器默认 */
+.inject-list {
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+.inject-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 15px;
+  color: #5f5448;
+  line-height: 1.85;
+  text-indent: 0;                       /* 列表项不首行缩进 */
+}
+.inject-list li::before {
+  content: '—';
+  color: rgba(196, 160, 72, 0.7);
+  font-size: 12px;
+  flex-shrink: 0;
+  margin-top: 4px;
+  letter-spacing: -2px;
+}
+
+/* 「给自己的一句话」模块 */
+.inject-words {
+  font-size: 15px;
+  color: #3d5545;
+  line-height: 2;
+  font-style: italic;
+  padding: 11px 14px;
+  border-left: 2px solid rgba(196, 160, 72, 0.5);
+  background: rgba(196, 160, 72, 0.06);
+  border-radius: 0 4px 4px 0;
+  text-indent: 0;
+}
+
+/* ======================================================
+   你的五行宇宙 — 全屏独立详情页
+   ====================================================== */
+
+#cosmos-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 9990;
+  background: #f5f0e6;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+  overflow: hidden;
+}
+#cosmos-fullscreen.cf-visible {
+  transform: translateX(0);
+}
+
+/* 顶部导航栏 */
+.cf-topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px 12px;
+  border-bottom: 1px solid rgba(190, 160, 90, 0.22);
+  flex-shrink: 0;
+  background: #f5f0e6;
+}
+.cf-back {
+  background: none;
+  border: none;
+  font-size: 14px;
+  color: #4a7c6f;
+  cursor: pointer;
+  padding: 4px 0;
+  letter-spacing: 1px;
+  flex-shrink: 0;
+}
+.cf-topbar-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #243f35;
+  letter-spacing: 2px;
+}
+
+/* 可滚动主体 */
+.cf-scroll {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 28px 24px 60px;
+}
+
+/* 页面标题区 */
+.cf-hero {
+  margin-bottom: 24px;
+}
+.cf-hero-title {
+  font-size: 26px;
+  font-weight: 600;
+  color: #243f35;
+  letter-spacing: 4px;
+  margin-bottom: 6px;
+}
+.cf-hero-sub {
+  font-size: 13px;
+  color: #9a8570;
+  letter-spacing: 3px;
+}
+
+/* 字段网格：4列 × 2行 */
+.cf-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 28px;
+}
+.cf-field {
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(190, 160, 90, 0.22);
+  border-radius: 10px;
+  padding: 11px 4px 10px;
+  text-align: center;
+  min-width: 0;
+}
+.cf-field-label {
+  font-size: 10px;
+  color: #9a8570;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+  line-height: 1;
+}
+.cf-field-value {
+  font-size: 16px;
+  color: #243f35;
+  font-weight: 500;
+  letter-spacing: 1px;
+  line-height: 1.3;
+  word-break: keep-all;
+}
+
+/* 白话正文 */
+.cf-text {
+  margin-bottom: 24px;
+  border-top: 1px solid rgba(190, 160, 90, 0.2);
+  padding-top: 20px;
+}
+.cf-para {
+  font-size: 15px;
+  color: #5f5448;
+  line-height: 1.95;
+  margin: 0 0 14px 0;
+  text-indent: 2em;
+}
+.cf-para:last-child { margin-bottom: 0; }
+
+/* 古籍引用：底部弱化 */
+.cf-lit {
+  border-top: 1px solid rgba(190, 160, 90, 0.18);
+  padding-top: 16px;
+  font-size: 12px;
+  color: #b0977a;
+  line-height: 1.8;
+  letter-spacing: 0.3px;
+}
+.cf-lit-mark {
+  font-size: 15px;
+  color: rgba(196, 160, 72, 0.45);
+  margin-right: 4px;
+}
+.cf-lit-source {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: #c8ab80;
+  letter-spacing: 1px;
+}
+
+/* ======================================================
+   你与世界·关系动力 — 全屏独立详情页
+   ====================================================== */
+
+#relations-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 9990;
+  background: #f5f0e6;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+  overflow: hidden;
+}
+#relations-fullscreen.rf-visible {
+  transform: translateX(0);
+}
+
+/* 顶部栏 */
+.rf-topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px 12px;
+  border-bottom: 1px solid rgba(190, 160, 90, 0.22);
+  flex-shrink: 0;
+  background: #f5f0e6;
+}
+.rf-back {
+  background: none;
+  border: none;
+  font-size: 14px;
+  color: #4a7c6f;
+  cursor: pointer;
+  padding: 4px 0;
+  letter-spacing: 1px;
+  flex-shrink: 0;
+}
+.rf-topbar-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #243f35;
+  letter-spacing: 1.5px;
+}
+
+/* 滚动主体 */
+.rf-scroll {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 24px 20px 60px;
+}
+
+/* 页眉 */
+.rf-hero {
+  margin-bottom: 24px;
+}
+.rf-hero-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #243f35;
+  letter-spacing: 4px;
+  margin-bottom: 6px;
+}
+.rf-hero-sub {
+  font-size: 12px;
+  color: #9a8570;
+  letter-spacing: 2px;
+}
+
+/* 关系卡片 */
+.rf-card {
+  background: rgba(255, 255, 255, 0.42);
+  border-radius: 12px;
+  padding: 18px 16px 14px;
+  margin-bottom: 14px;
+  border: 1px solid rgba(190, 160, 90, 0.2);
+}
+.rf-card:last-child { margin-bottom: 0; }
+
+/* 生关系：暖绿调 */
+.rf-card--gen {
+  border-left: 3px solid rgba(74, 124, 111, 0.55);
+}
+/* 张力关系：暖金调 */
+.rf-card--ten {
+  border-left: 3px solid rgba(196, 150, 72, 0.55);
+}
+
+/* 卡片顶部：标签 + 五行 */
+.rf-card-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+.rf-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #243f35;
+  letter-spacing: 1.5px;
+}
+.rf-element {
+  font-size: 18px;
+  font-weight: 600;
+  color: #4a7c6f;
+  letter-spacing: 2px;
+}
+
+/* 神兽名 */
+.rf-beasts {
+  font-size: 11px;
+  color: #a89878;
+  letter-spacing: 2px;
+  margin-bottom: 12px;
+}
+
+/* 正文 */
+.rf-text {
+  font-size: 14px;
+  color: #5f5448;
+  line-height: 1.95;
+  margin: 0 0 12px 0;
+}
+
+/* 题跋短句 */
+.rf-card-text {
+  font-size: 13px;
+  color: #6a7a6a;
+  line-height: 1.8;
+  font-style: italic;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.5);
+  border-left: 2px solid rgba(190, 160, 90, 0.35);
+  border-radius: 0 4px 4px 0;
+  margin-bottom: 10px;
+}
+
+/* 文献引用 */
+.rf-lit {
+  font-size: 11px;
+  color: #b0977a;
+  line-height: 1.7;
+  letter-spacing: 0.3px;
+}
+
+/* ======================================================
+   人生节律 — 全屏独立详情页
+   ====================================================== */
+
+#lifecycle-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 9990;
+  background: #f5f0e6;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+  overflow: hidden;
+}
+#lifecycle-fullscreen.lf-visible {
+  transform: translateX(0);
+}
+
+/* 顶部栏 */
+.lf-topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px 12px;
+  border-bottom: 1px solid rgba(190, 160, 90, 0.22);
+  flex-shrink: 0;
+  background: #f5f0e6;
+}
+.lf-back {
+  background: none;
+  border: none;
+  font-size: 14px;
+  color: #4a7c6f;
+  cursor: pointer;
+  padding: 4px 0;
+  letter-spacing: 1px;
+  flex-shrink: 0;
+}
+.lf-topbar-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #243f35;
+  letter-spacing: 2px;
+}
+
+/* 滚动主体 */
+.lf-scroll {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 24px 20px 60px;
+}
+
+/* 页眉 */
+.lf-hero {
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(190, 160, 90, 0.2);
+}
+.lf-hero-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #243f35;
+  letter-spacing: 4px;
+  margin-bottom: 6px;
+}
+.lf-hero-sub {
+  font-size: 12px;
+  color: #9a8570;
+  letter-spacing: 2px;
+  margin-bottom: 12px;
+}
+.lf-summary {
+  font-size: 14px;
+  color: #7a6a55;
+  line-height: 1.85;
+  padding-left: 14px;
+  border-left: 2px solid rgba(196, 160, 72, 0.35);
+}
+
+/* 阶段核心区 */
+.lf-phase-block {
+  margin-bottom: 28px;
+}
+
+/* 阶段行：现代名 + 原文名 + 能量标签 */
+.lf-phase-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.lf-phase-modern {
+  font-size: 26px;
+  font-weight: 700;
+  color: #243f35;
+  letter-spacing: 3px;
+}
+.lf-phase-original {
+  font-size: 14px;
+  color: #9a8570;
+  letter-spacing: 2px;
+  border: 1px solid rgba(190, 160, 90, 0.4);
+  border-radius: 4px;
+  padding: 2px 7px;
+  line-height: 1.5;
+}
+.lf-energy {
+  font-size: 11px;
+  color: #4a7c6f;
+  background: rgba(74, 124, 111, 0.1);
+  border-radius: 10px;
+  padding: 2px 9px;
+  letter-spacing: 1px;
+}
+
+/* 阶段内意境标题 */
+.lf-phase-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: #3d5545;
+  letter-spacing: 2px;
+  margin-bottom: 14px;
+}
+
+/* 正文段落：右缩 + 首行缩进 */
+.lf-text {
+  font-size: 15px;
+  color: #5f5448;
+  line-height: 2;
+  margin: 0 0 16px 0;
+  padding-left: 14px;
+}
+
+/* 建议条 */
+.lf-advice {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 14px;
+  color: #5f5448;
+  line-height: 1.8;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.45);
+  border-radius: 8px;
+  border: 1px solid rgba(190, 160, 90, 0.2);
+}
+.lf-advice-label {
+  font-size: 11px;
+  color: #a89878;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* 敏感阶段声明 */
+.lf-sensitive-note {
+  font-size: 14px;
+  color: #7a6a55;
+  line-height: 2;
+  padding: 16px 18px;
+  background: rgba(255, 255, 255, 0.38);
+  border-radius: 10px;
+  border: 1px solid rgba(190, 160, 90, 0.2);
+  letter-spacing: 0.5px;
+}
+
+/* 文献依据底部 */
+.lf-meta {
+  border-top: 1px solid rgba(190, 160, 90, 0.18);
+  padding-top: 16px;
+}
+.lf-meta-basis {
+  font-size: 12px;
+  color: #b0977a;
+  line-height: 1.8;
+  margin-bottom: 6px;
+}
+.lf-meta-source {
+  font-size: 11px;
+  color: #c8ab80;
+  line-height: 1.6;
+  letter-spacing: 0.3px;
+}
+
+/* ====================================================== */
+
+.world-bg-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  min-height: 100%;
+  background-size: cover;
+  background-position: center top;
+  z-index: 0;
+  pointer-events: none;
+}
+.world-bg-layer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(245, 240, 232, 0.83);
+}
+.world-screen-inner.world-has-bg {
+  position: relative;
+}
+.world-screen-inner.world-has-bg > *:not(.world-bg-layer) {
+  position: relative;
+  z-index: 1;
+}
+
+/* ======================================================
+   分享神兽卡片（Canvas 合成版）
+   ====================================================== */
+
+/* 注入的浅色边框按钮已废弃，强制隐藏防止残留 */
+.share-beast-btn {
+  display: none !important;
+}
+
+/* 全屏预览遮罩（神兽卡 / 人格卡 / 报告摘要 共用） */
+#share-card-overlay,
+#personality-card-overlay,
+#summary-card-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(28, 20, 10, 0.78);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  opacity: 0;
+  transition: opacity 0.22s ease;
+  overflow: hidden;
+}
+#share-card-overlay.sc-visible,
+#personality-card-overlay.sc-visible,
+#summary-card-overlay.sc-visible {
+  opacity: 1;
+}
+
+/* 顶部关闭行（不会被截图截入） */
+.sc-close-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 390px;
+  padding: 14px 20px 10px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+.sc-close-btn {
+  background: none;
+  border: none;
+  font-size: 14px;
+  color: rgba(245, 240, 232, 0.75);
+  letter-spacing: 1px;
+  cursor: pointer;
+  padding: 4px 0;
+}
+.sc-hint {
+  font-size: 12px;
+  color: rgba(245, 240, 232, 0.4);
+  letter-spacing: 1px;
+}
+
+/* 图片舞台：居中显示合成图 */
+.sc-stage {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 0 20px 20px;
+  box-sizing: border-box;
+  min-height: 0;
+}
+
+/* 合成后图片：9:16，撑满舞台高度，宽度自适应 */
+.sc-result-img {
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+  border-radius: 10px;
+  box-shadow: 0 6px 36px rgba(0, 0, 0, 0.6);
+  display: block;
+}
+
+/* 合成中提示 */
+.sc-loading {
+  font-size: 15px;
+  color: rgba(245, 240, 232, 0.55);
+  letter-spacing: 3px;
+}
+
+/* 错误提示 */
+.sc-error {
+  font-size: 13px;
+  color: rgba(220, 180, 120, 0.8);
+  letter-spacing: 1px;
+  text-align: center;
+  line-height: 1.8;
+  padding: 0 24px;
+}
+
+/* ======================================================
+   注入左上角「返回」按钮（报告页 / 五行世界页）
+   ====================================================== */
+
+.inject-back-btn {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 80;
+  padding: 6px 14px 6px 9px;
+  background: rgba(245, 240, 232, 0.85);
+  border: 1px solid rgba(190, 160, 90, 0.28);
+  border-radius: 20px;
+  font-size: 14px;
+  color: #4a7c6f;
+  letter-spacing: 1px;
+  cursor: pointer;
+  line-height: 1.5;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.09);
+  -webkit-tap-highlight-color: transparent;
+}
+.inject-back-btn:active {
+  background: rgba(232, 226, 210, 0.92);
+}
+
+/* 报告页：报告内容从最顶部开始，返回按钮悬浮其上，不挤占布局 */
+.report-screen-inner {
+  position: relative;
+}
+
+/* 五行世界页：同样需要 position:relative 让绝对定位生效 */
+.world-screen-inner {
+  position: relative;
+}
+
+/* ======================================================
+   互斥屏幕：非 active / 非 exit 的 screen 完全从布局移除。
+   display:none 是唯一可靠的方式：确保 result 与 report
+   不会同时出现在文档流里，彻底避免「两个页面上下堆叠」的问题。
+   .exit 屏处于退出动画中，暂时豁免；.active 屏正常展示。
+   ====================================================== */
+.screen:not(.active):not(.exit) {
+  display: none !important;
+}
+
+/* ======================================================
+   你和 TA 的神兽关系 — 入口按钮（五行世界页）
+   ====================================================== */
+.cp-entry-btn {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 13px 0;
+  background: transparent;
+  border: 1.5px solid rgba(74, 124, 111, 0.55);
+  border-radius: 10px;
+  font-size: 15px;
+  color: #4a7c6f;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+  text-align: center;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.18s, color 0.18s;
+}
+.cp-entry-btn:active {
+  background: rgba(74, 124, 111, 0.08);
+}
+
+/* ======================================================
+   你和 TA 的神兽关系 — 全屏界面
+   ====================================================== */
+#couple-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 8800;
+  background: #f5f0e8;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+#couple-fullscreen.cp-visible {
+  transform: translateX(0);
+}
+
+/* 顶部导航栏 */
+.cp-topbar {
+  display: flex;
+  align-items: center;
+  height: 52px;
+  padding: 0 16px;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(190, 160, 90, 0.15);
+  background: rgba(245, 240, 232, 0.95);
+  position: relative;
+}
+.cp-back {
+  background: none;
+  border: none;
+  font-size: 15px;
+  color: #4a7c6f;
+  cursor: pointer;
+  padding: 6px 10px 6px 0;
+  letter-spacing: 0.5px;
+  -webkit-tap-highlight-color: transparent;
+}
+.cp-topbar-title {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 15px;
+  font-weight: 600;
+  color: #243f35;
+  letter-spacing: 1.5px;
+  white-space: nowrap;
+}
+
+/* ── Step 互斥切换 ──
+   #couple-fullscreen 是 flex column 容器；
+   .cp-step 默认隐藏，.cp-step-active 时展开并填满剩余高度。
+   每个 step 内部的 .cp-scroll 负责独立滚动，互不干扰。 */
+.cp-step {
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+}
+.cp-step.cp-step-active {
+  display: flex;
+  flex: 1;
+  min-height: 0; /* 避免 flex 子项撑破父容器 */
+}
+
+/* 可滚动内容区（每个 step 内独立滚动容器） */
+.cp-scroll {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 36px 24px 48px;
+  min-height: 0;
+}
+
+/* Hero 区域 */
+.cp-hero {
+  text-align: center;
+  margin-bottom: 36px;
+}
+.cp-hero-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #243f35;
+  letter-spacing: 2px;
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+.cp-hero-sub {
+  font-size: 14px;
+  color: #7a6a55;
+  letter-spacing: 1px;
+  line-height: 1.8;
+}
+
+/* 正文区域 */
+.cp-body {
+  background: rgba(255, 255, 255, 0.52);
+  border: 1px solid rgba(190, 160, 90, 0.18);
+  border-radius: 12px;
+  padding: 20px 18px;
+  margin-bottom: 32px;
+}
+.cp-intro {
+  font-size: 14px;
+  color: #5f5448;
+  line-height: 2;
+  letter-spacing: 0.3px;
+  margin: 0;
+}
+
+/* 下一步按钮（可点击） */
+.cp-next-btn {
+  display: block;
+  width: 100%;
+  padding: 15px 0;
+  background: #4a7c6f;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  color: #f5f0e8;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+  text-align: center;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.15s;
+}
+.cp-next-btn:active {
+  opacity: 0.82;
+}
+
+/* ======================================================
+   输入界面样式
+   ====================================================== */
+
+/* 分区标题 */
+.cp-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(196, 160, 72, 0.75);
+  letter-spacing: 2.5px;
+  margin: 0 0 12px 0;
+}
+.cp-section-ta {
+  margin-top: 28px;
+}
+
+/* 我的信息只读卡 */
+.cp-my-card {
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(74, 124, 111, 0.2);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 4px;
+}
+.cp-card-label {
+  font-size: 11px;
+  color: #9a8570;
+  letter-spacing: 1.5px;
+  margin-bottom: 10px;
+}
+.cp-card-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.cp-card-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 52px;
+}
+.cp-card-key {
+  font-size: 11px;
+  color: #9a8570;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+.cp-card-val {
+  font-size: 18px;
+  font-weight: 600;
+  color: #243f35;
+  letter-spacing: 1px;
+}
+.cp-card-personality {
+  font-size: 13px;
+  color: #4a7c6f;
+  letter-spacing: 1.5px;
+  margin-top: 6px;
+}
+
+/* 无数据提示 */
+.cp-no-data {
+  font-size: 13px;
+  color: #9a8570;
+  letter-spacing: 0.5px;
+  margin: 0 0 4px 0;
+  line-height: 1.8;
+}
+
+/* 输入项容器 */
+.cp-input-group {
+  margin-bottom: 14px;
+}
+.cp-label {
+  display: block;
+  font-size: 12px;
+  color: #7a6a55;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+
+/* 文字输入 */
+.cp-input {
+  display: block;
+  width: 100%;
+  padding: 11px 14px;
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(190, 160, 90, 0.28);
+  border-radius: 8px;
+  font-size: 15px;
+  color: #3a3028;
+  box-sizing: border-box;
+  outline: none;
+  -webkit-appearance: none;
+}
+.cp-input:focus {
+  border-color: rgba(74, 124, 111, 0.5);
+  background: rgba(255, 255, 255, 0.85);
+}
+
+/* 下拉选择 */
+.cp-select {
+  display: block;
+  width: 100%;
+  padding: 11px 14px;
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(190, 160, 90, 0.28);
+  border-radius: 8px;
+  font-size: 15px;
+  color: #3a3028;
+  box-sizing: border-box;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23a89878' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px;
+  cursor: pointer;
+}
+.cp-select:focus {
+  border-color: rgba(74, 124, 111, 0.5);
+}
+
+/* 提交按钮 */
+.cp-submit-btn {
+  display: block;
+  width: 100%;
+  margin-top: 28px;
+  padding: 15px 0;
+  background: #4a7c6f;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  color: #f5f0e8;
+  letter-spacing: 2px;
+  cursor: pointer;
+  text-align: center;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.15s;
+}
+.cp-submit-btn:active {
+  opacity: 0.82;
+}
+
+/* result step：顶部神兽 × 神兽 */
+.cp-result-header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+.cp-result-beasts {
+  font-size: 22px;
+  font-weight: 700;
+  color: #243f35;
+  letter-spacing: 3px;
+  margin-bottom: 6px;
+}
+.cp-result-sub {
+  font-size: 12px;
+  color: #9a8570;
+  letter-spacing: 1.5px;
+}
+
+/* 重新填写按钮 */
+.cp-redo-btn {
+  display: block;
+  width: 100%;
+  margin-top: 28px;
+  padding: 13px 0;
+  background: transparent;
+  border: 1.5px solid rgba(74, 124, 111, 0.4);
+  border-radius: 10px;
+  font-size: 14px;
+  color: #4a7c6f;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+  text-align: center;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+.cp-redo-btn:active {
+  background: rgba(74, 124, 111, 0.06);
+}
+
+/* 错误提示 */
+.cp-ta-error {
+  font-size: 13px;
+  color: #9a6050;
+  letter-spacing: 0.5px;
+  line-height: 1.8;
+  text-align: center;
+  margin-top: 48px;
+  margin-bottom: 8px;
+}
+
+/* ── 关系报告结果页 ───────────────────────────── */
+
+/* 加载中 */
+.cp-rel-loading {
+  margin-top: 72px;
+  text-align: center;
+  font-size: 14px;
+  color: #9a8570;
+  letter-spacing: 1px;
+}
+
+/* 关系标签（点燃型 / 滋养型 …） */
+.cp-rel-tag {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 3px 14px;
+  background: rgba(74, 124, 111, 0.10);
+  border: 1px solid rgba(74, 124, 111, 0.30);
+  border-radius: 20px;
+  font-size: 12px;
+  color: #4a7c6f;
+  letter-spacing: 2px;
+}
+
+/* 大标题 */
+.cp-rel-title {
+  margin-top: 24px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #243f35;
+  text-align: center;
+  line-height: 1.55;
+  letter-spacing: 0.5px;
+}
+
+/* 副标题 */
+.cp-rel-subtitle {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #9a8570;
+  text-align: center;
+  letter-spacing: 1px;
+  margin-bottom: 28px;
+}
+
+/* 双人身份卡行 */
+.cp-id-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+.cp-id-card {
+  flex: 1;
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px 12px 14px;
+  text-align: center;
+  box-shadow: 0 1px 6px rgba(36, 63, 53, 0.06);
+}
+.cp-id-label {
+  font-size: 11px;
+  color: #9a8570;
+  letter-spacing: 1.5px;
+  margin-bottom: 8px;
+}
+.cp-id-stem {
+  font-size: 28px;
+  font-weight: 700;
+  color: #243f35;
+  line-height: 1.1;
+  margin-bottom: 6px;
+}
+.cp-id-meta {
+  font-size: 12px;
+  color: #6a7c6a;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+.cp-id-pname {
+  font-size: 11px;
+  color: #b8a898;
+  letter-spacing: 0.5px;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+/* 内容段落 */
+.cp-rel-section {
+  margin-bottom: 22px;
+}
+.cp-rel-label {
+  font-size: 11px;
+  color: #9a8570;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(154, 133, 112, 0.18);
+}
+.cp-rel-text {
+  font-size: 14px;
+  color: #3a3228;
+  line-height: 1.85;
+  letter-spacing: 0.3px;
+  margin: 0;
+}
+
+/* 相处建议列表 */
+.cp-advice-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cp-advice-item {
+  font-size: 14px;
+  color: #3a3228;
+  line-height: 1.75;
+  letter-spacing: 0.3px;
+  padding: 8px 0 8px 18px;
+  position: relative;
+  border-bottom: 1px dashed rgba(154, 133, 112, 0.15);
+}
+.cp-advice-item:last-child {
+  border-bottom: none;
+}
+.cp-advice-item::before {
+  content: '·';
+  position: absolute;
+  left: 4px;
+  color: #4a7c6f;
+  font-size: 18px;
+  line-height: 1.4;
+}
+
+/* 底部按钮组 */
+.cp-result-btns {
+  margin-top: 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 8px;
+}
+
+/* 生成关系卡片（占位，暂不可用） */
+.cp-share-placeholder-btn {
+  display: block;
+  width: 100%;
+  padding: 13px 0;
+  background: rgba(74, 124, 111, 0.08);
+  border: 1.5px dashed rgba(74, 124, 111, 0.35);
+  border-radius: 10px;
+  font-size: 14px;
+  color: #9ab5ae;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+  text-align: center;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+.cp-share-placeholder-btn:active {
+  background: rgba(74, 124, 111, 0.12);
+}
+
+/* ── 统一免责声明（所有页面底部小字）── */
+.wx-disclaimer {
+  font-size: 11px;
+  color: rgba(100, 85, 65, 0.38);
+  text-align: center;
+  letter-spacing: 0.4px;
+  line-height: 1.7;
+  margin: 28px 0 4px;
+  padding: 0 12px;
+}
+/* React 首页原有 .disclaimer 元素 */
+.disclaimer {
+  font-size: 11px !important;
+  color: rgba(100, 85, 65, 0.38) !important;
+  letter-spacing: 0.4px !important;
+}
